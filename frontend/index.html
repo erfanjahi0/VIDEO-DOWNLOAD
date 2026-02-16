@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multi-Platform Media Downloader</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+        }
+
+        header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .server-status {
+            display: inline-block;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            margin-top: 10px;
+            background: rgba(255,255,255,0.2);
+            backdrop-filter: blur(10px);
+        }
+
+        .server-status.online {
+            background: rgba(76, 175, 80, 0.3);
+            border: 2px solid #4CAF50;
+        }
+
+        .server-status.offline {
+            background: rgba(244, 67, 54, 0.3);
+            border: 2px solid #f44336;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .tab-button {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            padding: 12px 25px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .tab-button:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .tab-button.active {
+            background: white;
+            color: #667eea;
+            border-color: white;
+        }
+
+        .tab-content {
+            display: none;
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .platform-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+
+        .platform-icon {
+            font-size: 2.5em;
+        }
+
+        .platform-header h2 {
+            color: #333;
+            font-size: 1.8em;
+        }
+
+        .download-form {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .input-group label {
+            font-weight: 600;
+            color: #555;
+            font-size: 0.95em;
+        }
+
+        .input-group input[type="text"] {
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+
+        .input-group input[type="text"]:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .options-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .input-group select {
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 16px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .input-group select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+
+        .download-button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 16px 40px;
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 10px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .download-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        .download-button:active {
+            transform: translateY(0);
+        }
+
+        .download-button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .download-button .spinner {
+            display: none;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-right: 10px;
+        }
+
+        .download-button.loading .spinner {
+            display: inline-block;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .progress-bar {
+            display: none;
+            width: 100%;
+            height: 6px;
+            background: #e0e0e0;
+            border-radius: 3px;
+            overflow: hidden;
+            margin-top: 15px;
+        }
+
+        .progress-bar.active {
+            display: block;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            width: 0%;
+            transition: width 0.3s ease;
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        .status-message {
+            display: none;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+            font-weight: 500;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .status-message.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status-message.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .status-message.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        .info-box {
+            background: #f8f9ff;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+
+        .info-box h4 {
+            color: #667eea;
+            margin-bottom: 8px;
+        }
+
+        .info-box ul {
+            margin-left: 20px;
+            color: #666;
+            line-height: 1.6;
+        }
+
+        footer {
+            text-align: center;
+            color: white;
+            margin-top: 50px;
+            opacity: 0.8;
+        }
+
+        @media (max-width: 768px) {
+            header h1 {
+                font-size: 2em;
+            }
+
+            .tab-content {
+                padding: 25px;
+            }
+
+            .options-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Video Info Preview */
+        .video-preview {
+            display: none;
+            background: #f8f9ff;
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 15px;
+            border: 2px solid #e0e0e0;
+        }
+
+        .video-preview.active {
+            display: block;
+        }
+
+        .video-preview-content {
+            display: flex;
+            gap: 15px;
+            align-items: start;
+        }
+
+        .video-preview img {
+            width: 120px;
+            height: 90px;
+            object-fit: cover;
+            border-radius: 8px;
+        }
+
+        .video-preview-info h4 {
+            margin-bottom: 5px;
+            color: #333;
+        }
+
+        .video-preview-info p {
+            color: #666;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎬 Multi-Platform Downloader</h1>
+            <p>Download videos and audio from YouTube, Instagram, TikTok, and more</p>
+            <div class="server-status" id="serverStatus">
+                <span id="statusText">Checking server...</span>
+            </div>
+        </header>
+
+        <div class="tabs">
+            <button class="tab-button active" onclick="switchTab('youtube')">YouTube</button>
+            <button class="tab-button" onclick="switchTab('youtube-music')">YouTube Music</button>
+            <button class="tab-button" onclick="switchTab('facebook')">Facebook</button>
+            <button class="tab-button" onclick="switchTab('instagram')">Instagram</button>
+            <button class="tab-button" onclick="switchTab('tiktok')">TikTok</button>
+        </div>
+
+        <!-- YouTube Tab -->
+        <div id="youtube" class="tab-content active">
+            <div class="platform-header">
+                <span class="platform-icon">📺</span>
+                <h2>YouTube Downloader</h2>
+            </div>
+            <form class="download-form" onsubmit="handleDownload(event, 'youtube')">
+                <div class="input-group">
+                    <label for="youtube-url">Video URL</label>
+                    <input type="text" id="youtube-url" placeholder="https://www.youtube.com/watch?v=..." required>
+                </div>
+                
+                <div class="video-preview" id="youtube-preview">
+                    <div class="video-preview-content">
+                        <img id="youtube-thumbnail" src="" alt="Thumbnail">
+                        <div class="video-preview-info">
+                            <h4 id="youtube-title"></h4>
+                            <p id="youtube-info"></p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="options-grid">
+                    <div class="input-group">
+                        <label for="youtube-format">Format</label>
+                        <select id="youtube-format" onchange="updateYouTubeQuality(this.value)">
+                            <option value="video">Video + Audio</option>
+                            <option value="audio">Audio Only</option>
+                        </select>
+                    </div>
+                    
+                    <div class="input-group">
+                        <label for="youtube-quality">Quality</label>
+                        <select id="youtube-quality">
+                            <option value="2160">4K (2160p)</option>
+                            <option value="1440">2K (1440p)</option>
+                            <option value="1080" selected>Full HD (1080p)</option>
+                            <option value="720">HD (720p)</option>
+                            <option value="480">SD (480p)</option>
+                            <option value="360">Low (360p)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="checkbox-group">
+                    <input type="checkbox" id="youtube-subtitles">
+                    <label for="youtube-subtitles">Download Subtitles (if available)</label>
+                </div>
+
+                <button type="submit" class="download-button">
+                    <span class="spinner"></span>
+                    <span class="button-text">Download from YouTube</span>
+                </button>
+                
+                <div class="progress-bar" id="youtube-progress">
+                    <div class="progress-bar-fill"></div>
+                </div>
+                
+                <div id="youtube-status" class="status-message"></div>
+            </form>
+
+            <div class="info-box">
+                <h4>Supported Quality Options:</h4>
+                <ul>
+                    <li>Video: 360p, 480p, 720p, 1080p, 1440p, 4K</li>
+                    <li>Audio: MP3 (128kbps, 192kbps, 320kbps)</li>
+                    <li>Formats: MP4, WebM, MKV for video | MP3, M4A for audio</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- YouTube Music Tab -->
+        <div id="youtube-music" class="tab-content">
+            <div class="platform-header">
+                <span class="platform-icon">🎵</span>
+                <h2>YouTube Music Downloader</h2>
+            </div>
+            <form class="download-form" onsubmit="handleDownload(event, 'youtube-music')">
+                <div class="input-group">
+                    <label for="ytmusic-url">Music/Video URL</label>
+                    <input type="text" id="ytmusic-url" placeholder="https://music.youtube.com/watch?v=..." required>
+                </div>
+                
+                <div class="options-grid">
+                    <div class="input-group">
+                        <label for="ytmusic-format">Audio Format</label>
+                        <select id="ytmusic-format">
+                            <option value="mp3">MP3</option>
+                            <option value="m4a">M4A</option>
+                            <option value="opus">OPUS</option>
+                        </select>
+                    </div>
+                    
+                    <div class="input-group">
+                        <label for="ytmusic-quality">Audio Quality</label>
+                        <select id="ytmusic-quality">
+                            <option value="320">320 kbps (Best)</option>
+                            <option value="256" selected>256 kbps (High)</option>
+                            <option value="192">192 kbps (Medium)</option>
+                            <option value="128">128 kbps (Standard)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="checkbox-group">
+                    <input type="checkbox" id="ytmusic-metadata" checked>
+                    <label for="ytmusic-metadata">Embed Metadata & Album Art</label>
+                </div>
+
+                <button type="submit" class="download-button">
+                    <span class="spinner"></span>
+                    <span class="button-text">Download Audio</span>
+                </button>
+                
+                <div class="progress-bar" id="ytmusic-progress">
+                    <div class="progress-bar-fill"></div>
+                </div>
+                
+                <div id="ytmusic-status" class="status-message"></div>
+            </form>
+
+            <div class="info-box">
+                <h4>Features:</h4>
+                <ul>
+                    <li>High-quality audio extraction</li>
+                    <li>Automatic metadata tagging (artist, album, cover art)</li>
+                    <li>Multiple audio format support</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Facebook Tab -->
+        <div id="facebook" class="tab-content">
+            <div class="platform-header">
+                <span class="platform-icon">📘</span>
+                <h2>Facebook Video Downloader</h2>
+            </div>
+            <form class="download-form" onsubmit="handleDownload(event, 'facebook')">
+                <div class="input-group">
+                    <label for="facebook-url">Video URL</label>
+                    <input type="text" id="facebook-url" placeholder="https://www.facebook.com/..." required>
+                </div>
+                
+                <div class="options-grid">
+                    <div class="input-group">
+                        <label for="facebook-quality">Video Quality</label>
+                        <select id="facebook-quality">
+                            <option value="1080" selected>HD Quality</option>
+                            <option value="720">SD Quality</option>
+                        </select>
+                    </div>
+                </div>
+
+                <button type="submit" class="download-button">
+                    <span class="spinner"></span>
+                    <span class="button-text">Download from Facebook</span>
+                </button>
+                
+                <div class="progress-bar" id="facebook-progress">
+                    <div class="progress-bar-fill"></div>
+                </div>
+                
+                <div id="facebook-status" class="status-message"></div>
+            </form>
+
+            <div class="info-box">
+                <h4>Supported Content:</h4>
+                <ul>
+                    <li>Public video posts</li>
+                    <li>Facebook Stories</li>
+                    <li>Facebook Reels</li>
+                    <li>Watch videos</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Instagram Tab -->
+        <div id="instagram" class="tab-content">
+            <div class="platform-header">
+                <span class="platform-icon">📷</span>
+                <h2>Instagram Downloader</h2>
+            </div>
+            <form class="download-form" onsubmit="handleDownload(event, 'instagram')">
+                <div class="input-group">
+                    <label for="instagram-url">Post/Reel/Story URL</label>
+                    <input type="text" id="instagram-url" placeholder="https://www.instagram.com/p/..." required>
+                </div>
+                
+                <div class="options-grid">
+                    <div class="input-group">
+                        <label for="instagram-quality">Quality</label>
+                        <select id="instagram-quality">
+                            <option value="1080" selected>Best Available</option>
+                            <option value="720">720p</option>
+                            <option value="480">480p</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="checkbox-group">
+                    <input type="checkbox" id="instagram-carousel">
+                    <label for="instagram-carousel">Download all items from carousel posts</label>
+                </div>
+
+                <button type="submit" class="download-button">
+                    <span class="spinner"></span>
+                    <span class="button-text">Download from Instagram</span>
+                </button>
+                
+                <div class="progress-bar" id="instagram-progress">
+                    <div class="progress-bar-fill"></div>
+                </div>
+                
+                <div id="instagram-status" class="status-message"></div>
+            </form>
+
+            <div class="info-box">
+                <h4>Features:</h4>
+                <ul>
+                    <li>Download photos, videos, reels, and stories</li>
+                    <li>Carousel post support (multiple images/videos)</li>
+                    <li>High-quality downloads</li>
+                    <li>IGTV video support</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- TikTok Tab -->
+        <div id="tiktok" class="tab-content">
+            <div class="platform-header">
+                <span class="platform-icon">🎪</span>
+                <h2>TikTok Downloader</h2>
+            </div>
+            <form class="download-form" onsubmit="handleDownload(event, 'tiktok')">
+                <div class="input-group">
+                    <label for="tiktok-url">Video URL</label>
+                    <input type="text" id="tiktok-url" placeholder="https://www.tiktok.com/@username/video/..." required>
+                </div>
+                
+                <div class="options-grid">
+                    <div class="input-group">
+                        <label for="tiktok-quality">Download Option</label>
+                        <select id="tiktok-quality">
+                            <option value="1080" selected>Without Watermark (Best Quality)</option>
+                            <option value="720">With Watermark</option>
+                        </select>
+                    </div>
+                    
+                    <div class="input-group">
+                        <label for="tiktok-format">Format</label>
+                        <select id="tiktok-format">
+                            <option value="video">MP4 (Video)</option>
+                            <option value="audio">MP3 (Audio)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="checkbox-group">
+                    <input type="checkbox" id="tiktok-cover">
+                    <label for="tiktok-cover">Download video cover image</label>
+                </div>
+
+                <button type="submit" class="download-button">
+                    <span class="spinner"></span>
+                    <span class="button-text">Download from TikTok</span>
+                </button>
+                
+                <div class="progress-bar" id="tiktok-progress">
+                    <div class="progress-bar-fill"></div>
+                </div>
+                
+                <div id="tiktok-status" class="status-message"></div>
+            </form>
+
+            <div class="info-box">
+                <h4>Features:</h4>
+                <ul>
+                    <li>Download without watermark (clean video)</li>
+                    <li>High-quality video downloads</li>
+                    <li>Audio extraction (MP3)</li>
+                    <li>Cover image download</li>
+                    <li>Support for all video types</li>
+                </ul>
+            </div>
+        </div>
+
+        <footer>
+            <p>⚠️ For Personal Use Only - Please respect copyright and platform terms of service</p>
+            <p>© 2024 Multi-Platform Downloader</p>
+        </footer>
+    </div>
+
+    <!-- Load config first -->
+    <script src="config.js"></script>
+    
+    <!-- Main application script -->
+    <script src="app.js"></script>
+</body>
+</html>
